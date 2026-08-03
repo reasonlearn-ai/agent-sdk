@@ -2,7 +2,6 @@
 
 import os
 import time
-from typing import Any
 
 from claude_agent_sdk import (
     SessionKey,
@@ -19,8 +18,7 @@ class CustomSessionStore:
     """Persist Claude SDK session transcripts in MongoDB.
 
     Transcript batches are separate documents, so long-lived sessions do not
-    hit MongoDB's 16 MB document limit. MongoDB must be a replica set because
-    an append transaction updates related collections atomically.
+    hit MongoDB's 16 MB document limit.
     """
 
     def __init__(
@@ -29,10 +27,7 @@ class CustomSessionStore:
         database: str | None = None,
     ) -> None:
         self._client = AsyncMongoClient(
-            uri
-            or os.environ.get(
-                "MONGODB_URI", "mongodb://localhost:27017/?replicaSet=rs0"
-            )
+            uri or os.environ.get("MONGODB_URI", "mongodb://localhost:27017")
         )
         db = self._client[
             database or os.environ.get("MONGODB_DATABASE", "claude_sessions")
@@ -87,55 +82,51 @@ class CustomSessionStore:
         now_ms = self._mtime()
         transcript_filter = self._filter(key)
 
-        async def write_entries(session: Any) -> None:
-            transcript = await self._sessions.find_one_and_update(
-                transcript_filter,
-                {
-                    "$setOnInsert": transcript_filter,
-                    "$set": {"mtime": now_ms},
-                    "$inc": {"next_sequence": 1},
-                },
-                upsert=True,
-                session=session,
-                return_document=ReturnDocument.AFTER,
-            )
-            await self._batches.insert_one(
-                {
-                    **transcript_filter,
-                    "sequence": transcript["next_sequence"],
-                    "entries": entries,
-                },
-                session=session,
-            )
-
-            # Summaries track only the main transcript; subagent transcripts
-            # are returned separately by list_subkeys().
-            if key.get("subpath") is not None:
-                return
-
-            summary_filter = {
-                "project_key": key["project_key"],
-                "session_id": key["session_id"],
+        transcript = await self._sessions.find_one_and_update(
+            transcript_filter,
+            {
+                "$setOnInsert": transcript_filter,
+                "$set": {"mtime": now_ms},
+                "$inc": {"next_sequence": 1},
+            },
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        await self._batches.insert_one(
+            {
+                **transcript_filter,
+                "sequence": transcript["next_sequence"],
+                "entries": entries,
             }
-            previous = await self._summaries.find_one(summary_filter, session=session)
-            previous_summary: SessionSummaryEntry | None = None
-            if previous is not None:
-                previous_summary = {
-                    "session_id": previous["session_id"],
-                    "mtime": previous["mtime"],
-                    "data": previous["data"],
-                }
-            summary = fold_session_summary(previous_summary, key, entries)
-            summary["mtime"] = now_ms
-            await self._summaries.update_one(
-                summary_filter,
-                {"$set": summary, "$setOnInsert": summary_filter},
-                upsert=True,
-                session=session,
-            )
+        )
 
-        async with self._client.start_session() as session:
-            await session.with_transaction(write_entries)
+        # Summaries track only the main transcript; subagent transcripts are
+        # returned separately by list_subkeys().
+        if key.get("subpath") is not None:
+            return
+
+        summary_filter = {
+            "project_key": key["project_key"],
+            "session_id": key["session_id"],
+        }
+        previous = await self._summaries.find_one(summary_filter)
+        previous_summary: SessionSummaryEntry | None = None
+        if previous is not None:
+            previous_summary = {
+                "session_id": previous["session_id"],
+                "mtime": previous["mtime"],
+                "data": previous["data"],
+            }
+        summary = fold_session_summary(previous_summary, key, entries)
+        summary["mtime"] = now_ms
+        await self._summaries.update_one(
+            summary_filter,
+            {
+                "$set": {"mtime": summary["mtime"], "data": summary["data"]},
+                "$setOnInsert": summary_filter,
+            },
+            upsert=True,
+        )
 
     async def load(self, key: SessionKey) -> list[SessionStoreEntry] | None:
         await self._ensure_indexes()
@@ -189,13 +180,9 @@ class CustomSessionStore:
             "session_id": key["session_id"],
         }
 
-        async def delete_session(session: Any) -> None:
-            await self._sessions.delete_many(session_filter, session=session)
-            await self._batches.delete_many(session_filter, session=session)
-            await self._summaries.delete_one(session_filter, session=session)
-
-        async with self._client.start_session() as session:
-            await session.with_transaction(delete_session)
+        await self._sessions.delete_many(session_filter)
+        await self._batches.delete_many(session_filter)
+        await self._summaries.delete_one(session_filter)
 
     async def list_subkeys(self, key: SessionListSubkeysKey) -> list[str]:
         await self._ensure_indexes()

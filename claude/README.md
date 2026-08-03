@@ -8,14 +8,12 @@
 ## MongoDB session storage
 
 The custom store used by `examples/tool-custom-calls.py` persists SDK session
-transcripts in MongoDB. Start the local replica set before running the example:
+transcripts in MongoDB. Start the local database before running the example:
 
 ```bash
 docker compose up -d
 uv run python examples/tool-custom-calls.py
 ```
 
-The compose file binds MongoDB only to `127.0.0.1:27017`. The defaults are in
-`.env.example`; copy the variables to `.env` or export them when using another
-MongoDB deployment. The replica set is required for atomic transcript and
-summary updates.
+The defaults are in `.env.example`; copy the variables to `.env` or export
+them when using another MongoDB deployment.
