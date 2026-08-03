@@ -3,6 +3,7 @@ import httpx
 import asyncio
 from typing import Any
 from pydantic import BaseModel
+from custom_store import CustomSessionStore
 from claude_agent_sdk import (
     ClaudeAgentOptions,
     tool,
@@ -11,7 +12,6 @@ from claude_agent_sdk import (
     ResultMessage,
     AssistantMessage,
     ToolUseBlock,
-    InMemorySessionStore,
 )
 
 
@@ -162,7 +162,7 @@ weather_server = create_sdk_mcp_server(
     tools=[fetch_data, get_precipitation_chance, convert_units],
 )
 
-store = InMemorySessionStore()
+store = CustomSessionStore()
 
 options = ClaudeAgentOptions(
     mcp_servers={"server_of_tools": weather_server},
@@ -238,6 +238,8 @@ async def main():
             # results are printed above, so handle the failure here and continue with
             # the next prompt.
             print(f"Call failed: {error}")
+
+    await store.close()
 
 
 if __name__ == "__main__":

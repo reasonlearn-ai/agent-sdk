@@ -8,5 +8,6 @@ dependencies = [
     "claude-agent-sdk>=0.2.128",
     "httpx>=0.28.1",
     "pydantic>=2.13.4",
+    "pymongo>=4.11",
     "rich>=15.0.0",
 ]
