@@ -9,18 +9,23 @@ from claude_agent_sdk import (
     query,
 )
 
+options = (
+    ClaudeAgentOptions(
+        model="claude-sonnet-4-5",
+        allowed_tools=["Read", "Edit", "Glob", "Write"],  # Auto-approve these tools
+        permission_mode="bypassPermissions",  # Auto-approve file edits
+        setting_sources=["project"],
+        skills=["all"],
+    ),
+)
 
-async def main():
+
+async def promptClaude(prompt: str, options: ClaudeAgentOptions):
     console = Console()
     # Agentic loop: streams messages as Claude works
     async for message in query(
-        prompt="Run init.",
-        options=ClaudeAgentOptions(
-            model="claude-sonnet-5",
-            allowed_tools=["Read", "Edit", "Glob"],  # Auto-approve these tools
-            permission_mode="bypassPermissions",  # Auto-approve file edits
-            setting_sources=["project"],
-        ),
+        prompt=prompt,
+        options=options,
     ):
         # Print human-readable output
         if isinstance(message, AssistantMessage):
@@ -33,4 +38,17 @@ async def main():
             console.print(f"Done: {message.subtype}")  # Final result
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(
+        promptClaude(
+            "What skills do you have?",
+            ClaudeAgentOptions(),
+        )
+    )
+
+    asyncio.run(
+        promptClaude(
+            "Review utils.py for bugs that would cause crashes. Fix any issues you find and summarize changes made.",
+            ClaudeAgentOptions(),
+        )
+    )

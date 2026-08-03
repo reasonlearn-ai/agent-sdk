@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "WebSearch",
+      "WebFetch",
+      "Skill",
+      "Read",
+      "Edit",
+      "Glob",
+      "Write",
+      "Delete",
+      "Move",
+      "Copy",
+      "Rename",
+      "CreateFile",
+      "CreateFolder"
+    ],
+    "deny": []
+  }
+}
