@@ -1,5 +1,9 @@
 # Memory Log
 
+## User Information
+
+- **User's name**: Charlie
+
 ## Tool Calls
 
 - Bash: `ls -la .../.claude && find .../.claude -maxdepth 3` — Inspected existing .claude directory structure (found it empty) before running init.
@@ -21,3 +25,13 @@
 - Bash: ran ad-hoc Python snippets calling both functions with edge cases (`[]`, `None`, `[1,2,3]`, `[1,2,None,'x']`, `5`, `{'name':'bob'}`, `{}`, `None`, `"bob"`) — found a remaining crash: `calculate_average(5)` raised `TypeError: 'int' object is not iterable` because a non-iterable-but-truthy `numbers` argument skips the `if not numbers` guard and hits the `for` loop directly.
 - Edit: `buggy-code/utils.py` — added an `isinstance(numbers, (list, tuple, set, frozenset))` guard in `calculate_average` (returns `0` for non-iterable/unsupported types instead of crashing).
 - Bash: re-ran the edge-case snippet including `5`, `"abc"`, `(1,2,3,4)` to confirm all inputs now return safely with no crashes.
+- Read: `.claude/MEMORY.md` — User (Charlie) introduced themselves; updating memory to record their name.
+- ToolSearch: Loaded schemas for `mcp__server_of_tools__get_precipitation_chance` and `mcp__server_of_tools__fetch_data` to query weather data.
+- mcp__server_of_tools__get_precipitation_chance: Retrieved precipitation forecast for San Francisco (37.7749, -122.4194) — next 12 hours showing 0-1% chance.
+- mcp__server_of_tools__fetch_data: Fetched current temperature for San Francisco from Open-Meteo API — 68.1°F at 2026-08-03 17:00 GMT.
+- ToolSearch: Loaded schema for `mcp__server_of_tools__convert_units` to perform unit conversion.
+- mcp__server_of_tools__convert_units: Converted 100 kilometers to miles — result: 62.1371 miles.
+- mcp__server_of_tools__convert_units: Converted 72°F to Celsius — result: 22.2222°C.
+- mcp__server_of_tools__convert_units: Converted 5 kilograms to pounds — result: 11.0231 pounds.
+- mcp__server_of_tools__get_precipitation_chance: Retrieved precipitation forecast for San Francisco (37.7749, -122.4194) again — next 12 hours showing 0-1% chance.
+- mcp__server_of_tools__fetch_data: Fetched current temperature for San Francisco from Open-Meteo API again — 68.1°F at 2026-08-03 17:00 GMT.
